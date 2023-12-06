@@ -1,0 +1,39 @@
+import cv2
+import numpy as np
+import time
+
+# 设置视频参数
+width = 1280
+height = 720
+fps = 30
+
+# 创建视频流
+cap = cv2.VideoWriter("video.mp4", cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height))
+
+# 设置背景图像
+background = cv2.imread("background.jpg")
+
+# 设置倒计时数字
+numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
+# 循环生成视频帧
+for i in range(10):
+    # 生成倒计时数字
+    num = numbers[i]
+    font = cv2.FONT_HERSHEY_PLAIN
+    size = 60
+    color = (255, 255, 255)
+    cv2.putText(background, num, (width / 2, height / 2), font, size, color)
+
+    # 添加灯光效果
+    light = np.ones((height, width, 3), dtype=np.uint8) * 255
+    light = cv2.GaussianBlur(light, (5, 5), 0)
+    alpha = 0.5
+    background = cv2.addWeighted(background, 1 - alpha, light, alpha, 0)
+
+    # 保存视频帧
+    cap.write(background)
+    time.sleep(1)
+
+# 释放资源
+cap.release()

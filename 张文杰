@@ -1,39 +1,76 @@
-import cv2
-import numpy as np
-import time
+#include <stdio.h>
+#include <stdlib.h>
 
-# 设置视频参数
-width = 1280
-height = 720
-fps = 30
+// 定义哈夫曼树节点
+typedef struct huffman_node {
+    int weight;
+    struct huffman_node *left, *right;
+} huffman_node;
 
-# 创建视频流
-cap = cv2.VideoWriter("video.mp4", cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height))
+// 比较函数，用于qsort
+int compare(const void *a, const void *b) {
+    return (*(int*)a - *(int*)b);
+}
 
-# 设置背景图像
-background = cv2.imread("background.jpg")
+// 创建新节点
+huffman_node* create_node(int weight) {
+    huffman_node* node = (huffman_node*)malloc(sizeof(huffman_node));
+    node->weight = weight;
+    node->left = node->right = NULL;
+    return node;
+}
 
-# 设置倒计时数字
-numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+// 合并两个节点为一个新节点
+huffman_node* merge_nodes(huffman_node* left, huffman_node* right) {
+    huffman_node* node = create_node(left->weight + right->weight);
+    node->left = left;
+    node->right = right;
+    return node;
+}
 
-# 循环生成视频帧
-for i in range(10):
-    # 生成倒计时数字
-    num = numbers[i]
-    font = cv2.FONT_HERSHEY_PLAIN
-    size = 60
-    color = (255, 255, 255)
-    cv2.putText(background, num, (width / 2, height / 2), font, size, color)
+// 先序遍历打印哈夫曼树
+void preorder(huffman_node* node) {
+    if (node == NULL) return;
+    printf("%d\n", node->weight); // 打印当前节点
+    preorder(node->left);  // 先序遍历左子树
+    preorder(node->right); // 先序遍历右子树
+}
 
-    # 添加灯光效果
-    light = np.ones((height, width, 3), dtype=np.uint8) * 255
-    light = cv2.GaussianBlur(light, (5, 5), 0)
-    alpha = 0.5
-    background = cv2.addWeighted(background, 1 - alpha, light, alpha, 0)
+int main() {
+    int weights[] = {2, 3, 7, 9, 18, 25};
+    int n = sizeof(weights) / sizeof(weights[0]);
 
-    # 保存视频帧
-    cap.write(background)
-    time.sleep(1)
+    // 对权重进行排序
+    qsort(weights, n, sizeof(int), compare);
 
-# 释放资源
-cap.release()
+    // 构造哈夫曼树
+    while (n > 1) {
+        // 取出两个最小权重的节点
+        huffman_node *left = create_node(weights[0]);
+        huffman_node *right = create_node(weights[1]);
+
+        // 合并这两个节点
+        huffman_node *new_node = merge_nodes(left, right);
+
+        // 更新权重数组：移除已用的两个权重，添加新节点的权重
+        for (int i = 2; i < n; ++i) {
+            weights[i-2] = weights[i];
+        }
+        weights[n-2] = new_node->weight;
+        --n;
+
+        // 重新排序
+        qsort(weights, n, sizeof(int), compare);
+    }
+
+    // 剩下的最后一个元素就是根节点的权重
+    huffman_node* root = create_node(weights[0]);
+
+    // 先序遍历打印
+    preorder(root);
+
+    // 清理内存
+    // 这里省略了清理内存的代码，实际应用中应当释放所有动态分配的内存
+
+    return 0;
+}
